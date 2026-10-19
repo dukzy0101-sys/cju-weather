@@ -1,0 +1,475 @@
+
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mongol Weather — Цаг агаар</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Mongolian:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: dark;
+  --bg:#0b1220;--side:#0d1626;--panel:#111d30;--hover:#192941;
+  --text:#edf3ff;--muted:#91a0b8;--border:#233149;
+  --accent:#7c9cff;--blue:#8bd6ff;--shadow:0 18px 50px #0002;
+}
+body.light {
+  color-scheme:light;
+  --bg:#f3f6fc;--side:#fff;--panel:#fff;--hover:#eef3fc;
+  --text:#19263b;--muted:#6f7d92;--border:#e0e7f1;
+  --accent:#4e70e8;--blue:#2388ba;--shadow:0 14px 40px #263b6410;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:14px Inter,"Noto Sans Mongolian",sans-serif;transition:.25s}
+button,input{font:inherit}button{cursor:pointer}a{color:inherit;text-decoration:none}
+.app{min-height:100vh}
+.sidebar{position:fixed;inset:0 auto 0 0;width:235px;padding:28px 19px;background:var(--side);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:5}
+.brand{display:flex;align-items:center;gap:11px;font-size:18px;font-weight:800;margin-bottom:48px;letter-spacing:-.6px}
+.brand-icon{width:39px;height:39px;display:grid;place-items:center;background:linear-gradient(135deg,#ffd875,#ff9c65);color:#18213b;border-radius:13px;font-size:23px}
+.brand span:last-child span{color:var(--blue);margin-left:4px}
+.nav-label,.eyebrow{font-size:10px;font-weight:800;letter-spacing:1.6px;color:var(--muted)}
+.nav-label{margin:0 0 14px 9px}
+.nav-item{display:flex;gap:13px;align-items:center;padding:13px 14px;margin:3px 0;border-radius:11px;color:var(--muted)}
+.nav-item:hover,.nav-item.active{background:#7c9cff19;color:var(--blue)}
+.sidebar-bottom{margin-top:auto}
+.mini-card{padding:18px;border:1px solid var(--border);background:linear-gradient(145deg,#7c9cff12,#80d7ff08);border-radius:16px}
+.mini-card p{font-weight:700;line-height:1.6}
+.mini-card small{color:var(--muted);line-height:1.7}
+.sidebar-credit{color:var(--muted);font-size:10px;margin-top:18px}
+.main{margin-left:235px;padding:32px clamp(18px,4vw,55px) 24px;max-width:1800px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:22px;margin-bottom:20px}
+.topbar .eyebrow{margin:0 0 8px}
+h1{font-size:clamp(21px,2.3vw,29px);letter-spacing:-1px;margin:0}
+h2{font-size:20px;letter-spacing:-.5px;margin:0}
+h3{font-size:17px;margin:0 0 8px}
+p{margin-top:0}
+.muted{color:var(--muted)}
+.top-actions{display:flex;align-items:center;gap:10px}
+.search-box{display:flex;align-items:center;gap:9px;width:min(360px,35vw);height:44px;padding:5px 6px 5px 13px;background:var(--panel);border:1px solid var(--border);border-radius:12px}
+.search-box .magnify{font-size:23px;color:var(--muted)}
+.search-box input{min-width:0;width:100%;border:0;outline:0;background:transparent;color:var(--text)}
+.search-box input::placeholder{color:var(--muted)}
+.search-box button{border:0;background:var(--accent);color:white;border-radius:8px;padding:9px 12px;font-weight:700}
+.icon-button{width:44px;height:44px;border:1px solid var(--border);border-radius:12px;background:var(--panel);color:var(--text);font-size:18px}
+.status{min-height:16px;margin:0 3px 10px;color:var(--muted);font-size:12px}
+.status.error{color:#ff8585}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow)}
+.hero{min-height:285px;padding:clamp(24px,4vw,42px);display:grid;grid-template-columns:1fr 1fr;gap:20px;overflow:hidden;position:relative;background:radial-gradient(ellipse at 84% 20%,#638aff26,transparent 42%),var(--panel)}
+.hero-info,.hero-weather{position:relative;z-index:1}
+.pill{display:inline-flex;gap:8px;align-items:center;font-size:10px;letter-spacing:1.2px;font-weight:800;color:var(--blue)}
+.live-dot{width:7px;height:7px;background:#50dfa4;border-radius:50%;box-shadow:0 0 12px #50dfa477}
+.hero-info h2{font-size:27px;margin:21px 0 7px}
+.hero-info .muted{font-size:12px;margin-bottom:0}
+.temperature{font-size:clamp(65px,8vw,96px);font-weight:700;letter-spacing:-6px;line-height:1.1;margin:16px 0 12px}
+.hero-weather{display:flex;flex-direction:column;justify-content:space-between;align-items:center}
+.hero-icon{font-size:clamp(75px,10vw,120px);line-height:1.3;filter:drop-shadow(0 12px 20px #7c9cff25)}
+.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;margin-top:20px}
+.hero-stats>div{display:flex;flex-direction:column;align-items:center;gap:6px;padding:13px 4px;border:1px solid var(--border);border-radius:12px}
+.hero-stats>div>span{font-size:18px;color:var(--blue)}
+.hero-stats small{color:var(--muted);font-size:10px}
+.hero-stats strong{font-size:12px;white-space:nowrap}
+.section{margin-top:35px;scroll-margin-top:20px}
+.section-heading{display:flex;align-items:end;justify-content:space-between;gap:15px;margin-bottom:16px}
+.section-heading .eyebrow{margin-bottom:8px}
+.subtle-label{color:var(--muted);font-size:11px}
+.hourly-list{display:grid;grid-template-columns:repeat(8,minmax(75px,1fr));gap:10px;overflow-x:auto;padding:2px 2px 12px}
+.hour-card{text-align:center;padding:17px 8px;background:var(--panel);border:1px solid var(--border);border-radius:15px;min-width:75px;transition:.2s}
+.hour-card:hover{transform:translateY(-3px);border-color:var(--accent)}
+.hour-card.now{background:#7c9cff15;border-color:#7c9cff65}
+.hour-time{font-size:11px;color:var(--muted)}
+.hour-icon{font-size:25px;margin:14px 0}
+.hour-temp{font-size:18px;font-weight:800}
+.hour-rain{color:var(--blue);font-size:10px;margin-top:12px}
+.weekly-panel{padding:7px 22px}
+.week-header,.week-row{display:grid;grid-template-columns:1.05fr 1.3fr 1fr 1.3fr;align-items:center;gap:12px}
+.week-header{color:var(--muted);font-size:10px;padding:14px 4px}
+.week-row{min-height:67px;border-top:1px solid var(--border)}
+.week-day{font-weight:700}
+.week-date{font-size:10px;color:var(--muted);margin-top:5px}
+.week-weather{display:flex;align-items:center;gap:9px}
+.week-weather .weather-icon{font-size:23px}
+.week-weather small{color:var(--muted);font-size:10px;display:block;margin-top:4px}
+.week-rain{color:var(--blue);font-size:12px}
+.temp-range{display:flex;align-items:center;gap:9px;justify-content:space-between}
+.temp-range strong{min-width:33px;font-size:12px}
+.temp-range .low{color:var(--muted)}
+.range-track{flex:1;min-width:25px;height:5px;background:var(--border);border-radius:9px;overflow:hidden}
+.range-fill{height:100%;border-radius:9px;background:linear-gradient(90deg,#78b9f8,#ffd56c)}
+.air-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:16px}
+.aqi-card,.pollutant-card{padding:23px}
+.card-heading{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px}
+.info-dot{border:1px solid var(--border);width:19px;height:19px;display:grid;place-items:center;border-radius:50%}
+.aqi-main{display:flex;align-items:center;gap:19px;margin:23px 0}
+.aqi-number{font-size:60px;line-height:1;letter-spacing:-3px;font-weight:800}
+.aqi-main strong{font-size:14px}
+.aqi-main p{margin:8px 0 0;font-size:11px;line-height:1.6}
+.aqi-scale{height:8px;border-radius:9px;background:linear-gradient(90deg,#48ce91 0 16.6%,#d8df48 16.6% 33.2%,#ffad55 33.2% 49.8%,#ff7777 49.8% 66.4%,#c879df 66.4% 83%,#9b354a 83%);position:relative}
+.aqi-scale span{position:absolute;top:-4px;left:0;width:15px;height:15px;border:3px solid var(--panel);border-radius:50%;background:var(--text)}
+.scale-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:10px}
+.pollutant{display:grid;grid-template-columns:35px 1fr auto;gap:12px;align-items:center;padding:13px 0}
+.pollutant+.pollutant{border-top:1px solid var(--border)}
+.pollutant-icon{display:grid;place-items:center;width:35px;height:35px;background:#7c9cff17;color:var(--blue);border-radius:10px;font-size:19px}
+.pollutant small{display:block;color:var(--muted);font-size:10px;margin-bottom:5px}
+.pollutant strong{font-size:14px}
+.pollutant-value{text-align:right}
+.air-updated{font-size:10px;margin:12px 0 0;color:var(--muted)}
+footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:42px;padding-top:18px;border-top:1px solid var(--border);color:var(--muted);font-size:10px}
+footer p{margin:0}
+@media(min-width:1500px){.hourly-list{grid-template-columns:repeat(12,minmax(75px,1fr))}}
+@media(max-width:1100px){.sidebar{width:205px;padding-inline:15px}.main{margin-left:205px;padding-inline:24px}.hero{padding:25px}.hero-stats{gap:5px}.hero-stats strong{font-size:10px}.hourly-list{grid-template-columns:repeat(8,80px)}}
+@media(max-width:760px){
+.sidebar{position:static;width:auto;height:auto;padding:14px 16px;border-right:0;border-bottom:1px solid var(--border);display:block}
+.brand{margin-bottom:14px}
+.nav-label,.sidebar-bottom{display:none}
+.sidebar .nav-item{display:inline-flex;padding:9px 8px;gap:7px;font-size:11px}
+.main{margin:0;padding:22px 15px}
+.topbar{align-items:flex-start;flex-direction:column;gap:15px}
+.top-actions{width:100%}.search-box{width:auto;flex:1}
+.hero{grid-template-columns:1fr;gap:24px}
+.hero-weather{align-items:stretch}.hero-icon{text-align:center}.hero-stats{margin-top:16px}
+.hero-stats strong{font-size:11px}
+.air-grid{grid-template-columns:1fr}
+.section{margin-top:28px}
+.weekly-panel{padding:5px 12px;overflow-x:auto}
+.week-header,.week-row{min-width:460px}
+footer{flex-direction:column}
+}
+@media(max-width:390px){
+.sidebar .nav-item{gap:5px;padding:8px 5px}
+.hero{padding:19px}
+.hero-stats>div{padding:10px 2px}
+.hero-stats small,.hero-stats strong{font-size:9px}
+.aqi-card,.pollutant-card{padding:18px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <a class="brand" href="#"><span class="brand-icon">☀</span><span>Mongol<span>Weather</span></span></a>
+    <p class="nav-label">ҮНДСЭН ЦЭС</p>
+    <a class="nav-item active" href="#today">◉ <span>Өнөөдөр</span></a>
+    <a class="nav-item" href="#hourly">◷ <span>Цагийн прогноз</span></a>
+    <a class="nav-item" href="#weekly">▦ <span>7 хоногийн мэдээ</span></a>
+    <a class="nav-item" href="#air">≋ <span>Агаарын чанар</span></a>
+    <div class="sidebar-bottom">
+      <div class="mini-card"><span style="font-size:26px">🌤️</span><p>Өдрийг сайхан өнгөрүүлээрэй!</p><small>Цаг агаарын мэдээллээ эндээс аваарай.</small></div>
+      <p class="sidebar-credit">Open-Meteo өгөгдөл ашиглав.</p>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div><p class="eyebrow">ЦАГ АГААРЫН МЭДЭЭ</p><h1>Тэнгэр өнөөдөр ямар байна?</h1></div>
+      <div class="top-actions">
+        <form id="search-form" class="search-box">
+          <span class="magnify">⌕</span>
+          <input id="city-search" type="search" placeholder="Хот хайх..." aria-label="Хот хайх">
+          <button type="submit">Хайх</button>
+        </form>
+        <button id="theme-toggle" class="icon-button" type="button" title="Dark/Light горим">☀️</button>
+      </div>
+    </header>
+
+    <div id="status" class="status" role="status" aria-live="polite">Цаг агаарын мэдээлэл татаж байна...</div>
+
+    <section id="today" class="hero panel">
+      <div class="hero-info">
+        <span class="pill"><span class="live-dot"></span> ОДООГИЙН БАЙДАЛ</span>
+        <h2 id="city-name">Чонжү</h2>
+        <p id="local-date" class="muted">Мэдээлэл ачаалж байна...</p>
+        <div id="current-temp" class="temperature">--°</div>
+        <h3 id="current-desc">Цаг агаар</h3>
+        <p id="feels-like" class="muted">Мэдрэгдэх хэм: --°</p>
+      </div>
+      <div class="hero-weather">
+        <div id="hero-icon" class="hero-icon">🌤️</div>
+        <div class="hero-stats">
+          <div><span>↗</span><small>Салхи</small><strong id="wind">-- км/ц</strong></div>
+          <div><span>♧</span><small>Чийгшил</small><strong id="humidity">--%</strong></div>
+          <div><span>☂</span><small>Хур тунадас</small><strong id="rain">--%</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="hourly">
+      <div class="section-heading"><div><p class="eyebrow">ӨДРИЙН ЯВЦ</p><h2>24 цагийн прогноз</h2></div><span class="subtle-label">Цаг тутмын мэдээ</span></div>
+      <div id="hourly-list" class="hourly-list"><p class="muted">Мэдээлэл татаж байна...</p></div>
+    </section>
+
+    <section class="section" id="weekly">
+      <div class="section-heading"><div><p class="eyebrow">ИРЭХ ӨДРҮҮД</p><h2>7 хоногийн прогноз</h2></div><span class="subtle-label">7 өдрийн мэдээ</span></div>
+      <div class="panel weekly-panel">
+        <div class="week-header"><span>Өдөр</span><span>Төлөв</span><span>Хур тунадас</span><span>Температур</span></div>
+        <div id="weekly-list"><p class="muted">Мэдээлэл татаж байна...</p></div>
+      </div>
+    </section>
+
+    <section class="section" id="air">
+      <div class="section-heading"><div><p class="eyebrow">ОРЧНЫ МЭДЭЭЛЭЛ</p><h2>Агаарын чанар</h2></div><span class="subtle-label">US AQI · PM2.5 · PM10</span></div>
+      <div class="air-grid">
+        <article class="panel aqi-card">
+          <div class="card-heading"><span>Агаарын чанарын индекс</span><span class="info-dot" title="US AQI индекс">i</span></div>
+          <div class="aqi-main"><div id="aqi-value" class="aqi-number">--</div><div><strong id="aqi-label">Мэдээлэл хүлээж байна</strong><p id="aqi-advice" class="muted">Мэдээлэл ачаалж байна.</p></div></div>
+          <div id="aqi-scale" class="aqi-scale"><span></span></div>
+          <div class="scale-labels"><span>Сайн</span><span>Дунд</span><span>Муу</span></div>
+        </article>
+        <article class="panel pollutant-card">
+          <div class="pollutant"><div class="pollutant-icon">◉</div><div><small>Нарийн ширхэгт тоосонцор</small><strong>PM2.5</strong></div><div class="pollutant-value"><strong id="pm25">--</strong><small>µg/m³</small></div></div>
+          <div class="pollutant"><div class="pollutant-icon">◌</div><div><small>Бүдүүн ширхэгт тоосонцор</small><strong>PM10</strong></div><div class="pollutant-value"><strong id="pm10">--</strong><small>µg/m³</small></div></div>
+          <p id="air-updated" class="air-updated">Агаарын чанарын мэдээлэл ачаалж байна.</p>
+        </article>
+      </div>
+    </section>
+    <footer><p>© <span id="year"></span> Mongol Weather · Open-Meteo API</p><p>Прогноз нь тооцоолол тул бодит нөхцөлөөс зөрж болно.</p></footer>
+  </main>
+</div>
+
+<script>
+"use strict";
+
+const $ = id => document.getElementById(id);
+const API = {
+  forecast:"https://api.open-meteo.com/v1/forecast",
+  geocoding:"https://geocoding-api.open-meteo.com/v1/search",
+  air:"https://air-quality-api.open-meteo.com/v1/air-quality"
+};
+
+const WEATHER = {
+  0:["Цэлмэг","☀️"],1:["Ихэвчлэн цэлмэг","🌤️"],2:["Бага зэрэг үүлтэй","⛅"],3:["Үүлэрхэг","☁️"],
+  45:["Манантай","🌫️"],48:["Манантай","🌫️"],51:["Шиврээ бороо","🌦️"],53:["Шиврээ бороо","🌦️"],
+  55:["Их шиврээ бороо","🌧️"],56:["Хөлдүү шиврээ","🌧️"],57:["Хөлдүү шиврээ","🌧️"],
+  61:["Бага зэргийн бороо","🌦️"],63:["Бороо","🌧️"],65:["Ширүүн бороо","🌧️"],
+  66:["Хөлдүү бороо","🌧️"],67:["Ширүүн хөлдүү бороо","🌧️"],
+  71:["Бага зэргийн цас","🌨️"],73:["Цас","🌨️"],75:["Их цас","❄️"],77:["Цасан ширхэг","🌨️"],
+  80:["Аадар бороо","🌦️"],81:["Аадар бороо","🌧️"],82:["Ширүүн аадар","⛈️"],
+  85:["Цасан аадар","🌨️"],86:["Их цасан аадар","❄️"],
+  95:["Аянга цахилгаантай","⛈️"],96:["Мөндөртэй аянга","⛈️"],99:["Ширүүн мөндөртэй аянга","⛈️"]
+};
+
+const AQI_LEVELS = [
+  {max:50,label:"Сайн",advice:"Агаарын чанар сайн байна.",color:"#48ce91"},
+  {max:100,label:"Дунд зэрэг",advice:"Мэдрэг хүмүүс гадаах ачааллаа багасгаж болно.",color:"#d8c83d"},
+  {max:150,label:"Мэдрэг хүмүүст муу",advice:"Мэдрэг хүмүүс гадаа удаан байхаас зайлсхийх хэрэгтэй.",color:"#ffad55"},
+  {max:200,label:"Муу",advice:"Гадаах удаан хугацааны ачааллыг багасгаарай.",color:"#ff7777"},
+  {max:300,label:"Маш муу",advice:"Гадаах үйл ажиллагааг аль болох хязгаарлаарай.",color:"#c879df"},
+  {max:Infinity,label:"Аюултай",advice:"Гадаа гарах шаардлагатай бол хамгаалах арга хэмжээ аваарай.",color:"#b83e59"}
+];
+
+let city={name:"Чонжү",latitude:36.6424,longitude:127.4890,timezone:"Asia/Seoul"};
+let requestId=0;
+
+function info(code,isDay=1){
+  const result=WEATHER[code]||["Тодорхойгүй","🌡️"];
+  if(code===0&&isDay===0)return ["Цэлмэг шөнө","🌙"];
+  if((code===1||code===2)&&isDay===0)return ["Үүл багатай шөнө","🌙"];
+  return result;
+}
+function num(value,suffix="",digits=0){
+  if(value===null||value===undefined||!Number.isFinite(Number(value)))return "--";
+  return Number(value).toFixed(digits)+suffix;
+}
+function dateLabel(value,options={}){
+  const [y,m,d]=value.slice(0,10).split("-").map(Number);
+  return new Intl.DateTimeFormat("mn-MN",{timeZone:"UTC",...options}).format(new Date(Date.UTC(y,m-1,d,12)));
+}
+function weekday(value){
+  const [y,m,d]=value.slice(0,10).split("-").map(Number);
+  return new Intl.DateTimeFormat("mn-MN",{timeZone:"UTC",weekday:"long"}).format(new Date(Date.UTC(y,m-1,d,12)));
+}
+function status(message="",error=false){
+  $("status").textContent=message;
+  $("status").classList.toggle("error",error);
+}
+async function getJSON(url){
+  const response=await fetch(url);
+  if(!response.ok)throw new Error("HTTP "+response.status);
+  return response.json();
+}
+function findHour(times,current){
+  const hour=current.slice(0,13);
+  let index=times.findIndex(t=>t.slice(0,13)===hour);
+  if(index<0)index=times.findIndex(t=>t>=current);
+  return index;
+}
+
+async function loadWeather(){
+  const id=++requestId;
+  status(city.name+" хотын мэдээлэл татаж байна...");
+  const params=new URLSearchParams({
+    latitude:city.latitude,longitude:city.longitude,
+    timezone:city.timezone||"auto",forecast_days:"7",
+    current:"temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m",
+    hourly:"temperature_2m,precipitation_probability,weather_code,is_day",
+    daily:"weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset"
+  });
+
+  const results=await Promise.allSettled([
+    getJSON(API.forecast+"?"+params),
+    getJSON(API.air+"?"+new URLSearchParams({
+      latitude:city.latitude,longitude:city.longitude,
+      timezone:city.timezone||"auto",current:"us_aqi,pm2_5,pm10"
+    }))
+  ]);
+  if(id!==requestId)return;
+  if(results[0].status==="rejected"){
+    console.error(results[0].reason);
+    status("Цаг агаарын мэдээлэл татаж чадсангүй. Интернэтээ шалгаад дахин оролдоно уу.",true);
+    return;
+  }
+
+  const data=results[0].value;
+  $("city-name").textContent=city.name;
+  document.title=city.name+" | Mongol Weather";
+  renderCurrent(data);
+  renderHourly(data);
+  renderWeekly(data);
+
+  if(results[1].status==="fulfilled")renderAir(results[1].value);
+  else renderAirUnavailable();
+
+  const time=new Date().toLocaleTimeString("mn-MN",{hour:"2-digit",minute:"2-digit"});
+  status(city.name+" · "+time+" цагт шинэчилсэн"+
+    (results[1].status==="rejected"?" · AQI мэдээлэл түр боломжгүй.":""));
+}
+
+function renderCurrent(data){
+  const c=data.current;
+  const [desc,icon]=info(c.weather_code,c.is_day);
+  $("local-date").textContent=dateLabel(c.time,{weekday:"long",day:"numeric",month:"long"})+" · "+c.time.slice(11,16);
+  $("current-temp").textContent=num(c.temperature_2m,"°");
+  $("current-desc").textContent=desc;
+  $("hero-icon").textContent=icon;
+  $("feels-like").textContent="Мэдрэгдэх хэм: "+num(c.apparent_temperature,"°");
+  $("wind").textContent=num(c.wind_speed_10m," км/ц");
+  $("humidity").textContent=num(c.relative_humidity_2m,"%");
+  const i=findHour(data.hourly.time,c.time);
+  $("rain").textContent=num(i>=0?data.hourly.precipitation_probability[i]:null,"%");
+}
+
+function renderHourly(data){
+  const h=data.hourly;
+  let start=findHour(h.time,data.current.time);
+  if(start<0)start=0;
+  $("hourly-list").innerHTML=h.time.slice(start,start+24).map((time,i)=>{
+    const n=start+i;
+    const [desc,icon]=info(h.weather_code[n],h.is_day[n]);
+    return `<article class="hour-card ${i===0?"now":""}" title="${desc}">
+      <div class="hour-time">${i===0?"Одоо":time.slice(11,16)}</div>
+      <div class="hour-icon">${icon}</div>
+      <div class="hour-temp">${num(h.temperature_2m[n],"°")}</div>
+      <div class="hour-rain">☂ ${num(h.precipitation_probability[n],"%")}</div>
+    </article>`;
+  }).join("");
+}
+
+function renderWeekly(data){
+  const d=data.daily,lo=d.temperature_2m_min,hi=d.temperature_2m_max;
+  const min=Math.min(...lo),max=Math.max(...hi),span=Math.max(1,max-min);
+  $("weekly-list").innerHTML=d.time.map((date,i)=>{
+    const [desc,icon]=info(d.weather_code[i]);
+    const left=(lo[i]-min)/span*100;
+    const width=Math.max(4,(hi[i]-lo[i])/span*100);
+    return `<div class="week-row">
+      <div><div class="week-day">${i===0?"Өнөөдөр":weekday(date)}</div>
+      <div class="week-date">${dateLabel(date,{day:"numeric",month:"short"})}</div></div>
+      <div class="week-weather"><span class="weather-icon">${icon}</span><div><strong>${desc}</strong></div></div>
+      <div class="week-rain">☂ ${num(d.precipitation_probability_max[i],"%")}</div>
+      <div class="temp-range"><strong class="low">${num(lo[i],"°")}</strong>
+      <div class="range-track"><div class="range-fill" style="margin-left:${left}%;width:${width}%"></div></div>
+      <strong>${num(hi[i],"°")}</strong></div>
+    </div>`;
+  }).join("");
+}
+
+function renderAir(data){
+  const c=data.current,aqi=c.us_aqi;
+  $("aqi-value").textContent=num(aqi);
+  $("pm25").textContent=num(c.pm2_5,"",1);
+  $("pm10").textContent=num(c.pm10,"",1);
+  if(aqi===null||aqi===undefined||!Number.isFinite(Number(aqi))){
+    $("aqi-label").textContent="Индекс олдсонгүй";
+    $("aqi-advice").textContent="Агаарын чанарын мэдээлэл түр боломжгүй байна.";
+    $("aqi-value").style.color="var(--muted)";
+    $("air-updated").textContent="Агаарын чанарын өгөгдөл ирээгүй.";
+    return;
+  }
+  const level=AQI_LEVELS.find(x=>aqi<=x.max)||AQI_LEVELS[AQI_LEVELS.length-1];
+  $("aqi-label").textContent=level.label;
+  $("aqi-advice").textContent=level.advice;
+  $("aqi-value").style.color=level.color;
+  const percentage=Math.min(100,Math.max(0,aqi/300*100));
+  $("aqi-scale").querySelector("span").style.left=`calc(${percentage}% - 7px)`;
+  $("air-updated").textContent="Мэдээллийн цаг: "+(c.time||"тодорхойгүй").replace("T"," ");
+}
+function renderAirUnavailable(){
+  $("aqi-value").textContent="--";
+  $("aqi-label").textContent="Мэдээлэл боломжгүй";
+  $("aqi-advice").textContent="Дараа дахин оролдоно уу.";
+  $("aqi-value").style.color="var(--muted)";
+  $("pm25").textContent="--";$("pm10").textContent="--";
+  $("air-updated").textContent="Агаарын чанарын API-д холбогдож чадсангүй.";
+}
+
+async function searchCity(query){
+  const q=query.trim();
+  if(q.length<2){status("Хотын нэрийг дор хаяж 2 тэмдэгтээр оруулна уу.",true);return;}
+  status('"'+q+'" хотыг хайж байна...');
+  try{
+    const data=await getJSON(API.geocoding+"?"+new URLSearchParams({
+      name:q,count:"10",language:"en",format:"json"
+    }));
+    if(!data.results?.length){status("Хот олдсонгүй. Хотын нэрийг англиар бичиж үзээрэй.",true);return;}
+
+    const results=data.results;
+    let selected=results[0];
+    const exact=results.find(x=>x.name.toLowerCase()===q.toLowerCase());
+    if(exact)selected=exact;
+    else if(results.length>1){
+      const choices=results.slice(0,6).map((x,i)=>
+        `${i+1}. ${[x.name,x.admin1,x.country].filter(Boolean).join(", ")}`
+      ).join("\n");
+      const answer=prompt("Хотын дугаарыг сонгоно уу:\n\n"+choices,"1");
+      if(answer===null){status("Хотын сонголтыг цуцаллаа.");return;}
+      const index=Number(answer)-1;
+      if(!Number.isInteger(index)||index<0||index>=Math.min(results.length,6)){
+        status("Сонголт буруу байна.",true);return;
+      }
+      selected=results[index];
+    }
+    city={name:selected.name,latitude:selected.latitude,longitude:selected.longitude,timezone:selected.timezone||"auto"};
+    await loadWeather();
+  }catch(e){
+    console.error(e);status("Хот хайхад алдаа гарлаа. Интернэтээ шалгана уу.",true);
+  }
+}
+
+function initTheme(){
+  let saved=null;
+  try{saved=localStorage.getItem("mongol-weather-theme");}catch(e){}
+  const preferred=window.matchMedia?.("(prefers-color-scheme: light)").matches;
+  document.body.classList.toggle("light",saved?saved==="light":Boolean(preferred));
+  updateThemeButton();
+  $("theme-toggle").addEventListener("click",()=>{
+    const light=document.body.classList.toggle("light");
+    try{localStorage.setItem("mongol-weather-theme",light?"light":"dark");}catch(e){}
+    updateThemeButton();
+  });
+}
+function updateThemeButton(){
+  const light=document.body.classList.contains("light");
+  $("theme-toggle").textContent=light?"🌙":"☀️";
+  $("theme-toggle").title=light?"Dark горимд шилжих":"Light горимд шилжих";
+}
+$("year").textContent=new Date().getFullYear();
+initTheme();
+$("search-form").addEventListener("submit",e=>{
+  e.preventDefault();searchCity($("city-search").value);
+});
+loadWeather();
+</script>
+</body>
+</html>
+
